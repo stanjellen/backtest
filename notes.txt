@@ -1,0 +1,38 @@
+TODO ------------
+check range detection
+look into tightening stop loss by selling before candle close if extreme
+
+
+=============================
+TP=2R, above range, size 4, scale half and move SL/TP up by R
+-----------------------------
+Overall P&L: 10.24
+Win count:6, total: 42
+Loss count:6, total: -31.76
+=============================
+
+ TP min(HOD,2R), above range, size 4, scale half move sl/tp up by R, SL dip - 0.10
+ ---------------------------------------------
+Overall P&L: 0.010000000000002
+Win count:6, total: 26.55
+Loss count:6, total: -26.54
+-------------------
+same as above but move SL to retest low
+-----------------
+Overall P&L: -3.4
+Win count:6, total: 21.9
+Loss count:6, total: -25.3
+=========================
+TP=max(2R,HOD), above range, size 4, scale half and move SL/TP up by R, SL dip-0.10
+-------------------------
+Overall P&L: -1.82
+Win count:5, total: 34.3
+Loss count:7, total: -36.12
+=========================
+=========================
+TP=max(2R,HOD), above range, size 4, scale half and move SL/TP up by R, SL dip
+-------------------------
+Overall P&L: -1.62
+Win count:5, total: 33.26
+Loss count:7, total: -34.88
+=========================

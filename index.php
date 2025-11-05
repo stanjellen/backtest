@@ -74,7 +74,7 @@ foreach ($data as $i => $bar) {
         $break5hBar = $bar;
         $lowDiff = round($bar['low'] - $or5['high'], 2);
         $closeDiff = round($bar['close'] - $or5['high'], 2);
-        echo "  $ftime: total breakout above 5-min high. Low:+$lowDiff, Close:+$closeDiff\n";
+        // echo "  $ftime: total breakout above 5-min high. Low:+$lowDiff, Close:+$closeDiff\n";
     }
     if (!$break5hBar) continue;
 
@@ -83,7 +83,7 @@ foreach ($data as $i => $bar) {
         $retest5h = $bar;
         $lowDiff = round($bar['low'] - $or5['high'], 2);
         $closeDiff = round($bar['close'] - $or5['high'], 2);
-        echo "  $ftime: retest below 5-min high. Low: $lowDiff, Close: $closeDiff\n";
+        // echo "  $ftime: retest below 5-min high. Low: $lowDiff, Close: $closeDiff\n";
         $retests[$rangeLabel]++;
     }
     if (!$retest5h) continue;
@@ -94,30 +94,31 @@ foreach ($data as $i => $bar) {
 
     // next bar after retest (only entering here misses a lot!)
     if ($bsr === 1) {
+        // todo lower weight after big jump. biggest loss was due to that.
+        // todo check trend direction
+        // manual inputs for live trading
         // green bar and above previous day range
         if (is_green_bar($bar) && $bar['close'] > $prevDaybar['high']) {
-            // todo trailers
             $entryBar = $bar;
             $entryPrice = $bar['close'];
-            $stopLoss = $retest5h['low'] - 0.10; // 10 cents below retest low
-            $stopLossAmount = round($entryPrice - $stopLoss, 2);
-            $takeProfit = $entryPrice + min($hodBar['high'], 2 * $stopLossAmount); // 2R or day high, whichever is lower
-            $targetGain = round($takeProfit - $entryPrice, 2);
-            $RR = round($targetGain / $stopLossAmount, 2);
+            // $SL = $retest5h['low'] - 0.10; // 10 cents below retest low
+            $SL = $retest5h['low'];
+            $SLAmount = round($entryPrice - $SL, 2);
+            $plHOD = round($hodBar['high'] - $entryPrice, 2);
+            $TP = $entryPrice + max($plHOD, 2 * $SLAmount); // max(2R, HOD), whichever is lower
+            // $TP = $entryPrice + min($plHOD, 2 * $SLAmount); // min(2R, HOD), whichever is lower
+            // $TP = $entryPrice + min($plHOD, 2 * $SLAmount); // Worse than 2R
+            // $TP = $entryPrice + (2 * $SLAmount);
+            $targetGain = round($TP - $entryPrice, 2);
+            $RR = round($targetGain / $SLAmount, 2);
             $position = [
                 'entryBar' => $bar,
-                // 'entryPrice' => $bar['close'],
-                // 'stopLoss' => $retest5h['low'] - 0.10, // 10 cents below retest low
-                // 'takeProfit' => $entryPrice + min($hodBar['high'], 2*$stopLossAmount), // 2R or day high, whichever is lower
-                // 'targetGain' => $targetGain,
-                // 'stopLossAmount' => $stopLossAmount,
-                // 'RR' => $RR,
                 'size' => 4,
                 'realized' => 0,
             ];
 
 
-            echo "  $ftime <b>Entry - Size: {$position['size']} TP Gain: $targetGain, Stop Loss Amount: $stopLossAmount, R:R: $RR</b>\n";
+            echo "  $ftime <b>Entry - Size: {$position['size']} price: {$entryPrice} SL: $SL TP: $TP Gain: $targetGain, SL Amount: $SLAmount, R/R: $RR</b>\n";
         } else {
             // done for the day for now
             // todo better logic
@@ -132,7 +133,7 @@ foreach ($data as $i => $bar) {
     if ($daybar['high'] <= $bar['high']) {
         $diff = $bar['high'] - $retest5h['close'];
         // keep printing after done
-        echo "  HOD $bsr mins +$diff\n";
+        echo "  HOD $bsr mins +$diff {$bar['high']}\n";
     }
 
 
@@ -140,13 +141,13 @@ foreach ($data as $i => $bar) {
 
     // 3) take profit / Stop loss
     // take profit
-    if ($takeProfit <= $bar['high']) {
+    if ($TP <= $bar['high']) {
         $sellSize = ceil($position['size'] / 2);
         $position['size'] -= $sellSize;
-        $winAmount = round(($takeProfit - $entryPrice) * $sellSize, 3);
+        $winAmount = round(($TP - $entryPrice) * $sellSize, 3);
         $position['realized'] += $winAmount;
-        $stopLoss += $stopLossAmount; // move stop loss to breakeven
-        $takeProfit += $stopLossAmount; // move take profit up by 1R
+        $SL += $SLAmount; // move stop loss to breakeven
+        $TP += $SLAmount; // move take profit up by 1R
         if ($position['size']) {
             echo "  <b class=\"win\">$barsSinceEntry mins Scaled out. remaining size: {$position['size']} Realized: $winAmount</b>\n";
         } else {
@@ -156,7 +157,7 @@ foreach ($data as $i => $bar) {
         }
     }
     // stop loss at bar close
-    if ($stopLoss >= $bar['close']) {
+    if ($SL >= $bar['close']) {
         
         $realized = round($position['size'] * ($bar['close'] - $entryPrice), 2);
         $position['realized'] += $realized;
@@ -166,7 +167,7 @@ foreach ($data as $i => $bar) {
         } else {
             $lossAmount = round($position['realized'], 2);
             $losses[$rangeLabel][] = $lossAmount;
-            echo "  <b class=\"loss\">$barsSinceEntry mins Stop loss: {$position['realized']}</b>\n";
+            echo "  <b class=\"loss\">$ftime $barsSinceEntry mins Stop loss: {$position['realized']}</b>\n";
         }
         $retestDone = true;
     }
@@ -178,7 +179,8 @@ $lossCounts = array_map(fn($a) => count($a), $losses);
 $lossTotals = array_map(fn($a) => round(array_sum($a), 2), $losses);
 $totalWins = array_sum($winTotals);
 $totalLosses = array_sum($lossTotals);
-echo "Overall P&L: " . ($totalWins + $totalLosses) . "\n";
+$overallPL = round($totalWins + $totalLosses, 2);
+echo "Overall P&L: " . $overallPL . "\n";
 echo "Win count:" . array_sum($winCounts) . ", total: $totalWins\n";
 echo "Loss count:" . array_sum($lossCounts) . ", total: $totalLosses\n";
 echo "Win counts:";
