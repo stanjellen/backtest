@@ -42,6 +42,7 @@ $or5 = null; // 5-min open range bar
 $position = null;
 //        "yyyy-mm-dd DDD "
 $indent = "               ";
+$trueRanges = []; // for ATR calculation. ignore market open gaps, reset each day
 foreach ($data as $i => $bar) {
     $bar['i'] = $i;
     $ymd= date("Y-m-d", $bar['time']);
@@ -66,10 +67,12 @@ foreach ($data as $i => $bar) {
             $bnr5l = false;
             $retestDone = false;
         } 
+        $trueRanges = [true_range($bar, null)];
         // echo date("Y-m-d D ", $bar['time']) . " $rangeLabel\n";
     } else {
         [$isHigh, $isLow] = trackbar($daybar, $bar);
         if ($isHigh) $hodBar = $bar;
+        $trueRanges[] = true_range($bar, $data[$i - 1]);
     }
 
     // track 5-min open range
@@ -115,10 +118,12 @@ foreach ($data as $i => $bar) {
             $SL = $retest5h['low'];
             $SLAmount = round($entryPrice - $SL, 2);
             $plHOD = round($hodBar['high'] - $entryPrice, 2);
-            $TP = $entryPrice + max($plHOD, 2 * $SLAmount); // max(2R, HOD), whichever is lower
-            // $TP = $entryPrice + min($plHOD, 2 * $SLAmount); // min(2R, HOD), whichever is lower
-            // $TP = $entryPrice + min($plHOD, 2 * $SLAmount); // Worse than 2R
+            echo ' ATR=' . round(ATR(), 2) . "\n";
+            // take profit logic
+            // $TP = $entryPrice + max($plHOD, 2 * $SLAmount); // max(2R, HOD),
+            // $TP = $entryPrice + min($plHOD, 2 * $SLAmount); // min(2R, HOD), Worse than 2R
             // $TP = $entryPrice + (2 * $SLAmount);
+            $TP = $entryPrice + min(max($plHOD, 2 * $SLAmount), 3*ATR()); // max(2R, HOD)  capped at 3*ATR - best so far. P&L 17.38
             $targetGain = round($TP - $entryPrice, 2);
             $RR = round($targetGain / $SLAmount, 2);
             $position = [
@@ -230,6 +235,18 @@ print_r($lossTotals);
 // print_r($losses);
 echo "</pre>";
 //------------------------------------------------------------------------------
+function ATR($numBars = 14) {
+    // average true range over last $numBars
+    // use as few bars as available
+    global $trueRanges;
+    $ranges = array_slice($trueRanges, -$numBars);
+    return array_sum($ranges) / count($ranges);
+}
+function true_range($bar, $lastBar) {
+    if (!$lastBar) return $bar['high'] - $bar['low'];
+    // https://en.wikipedia.org/wiki/Average_true_range
+    return max($bar['high'], $lastBar['close']) - min($bar['low'], $lastBar['close']);
+}
 function labelRange($value, $bar) {
     if (!$bar) return "";
     if ($value > $bar['high']) return "aboveRange";
