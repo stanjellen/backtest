@@ -5,6 +5,8 @@ look into tightening stop loss by selling before candle close if extreme
 identify and avoid biggest losses
 
 
+Holding till next day could be bad.  e.g. April 1 14:53 entry on orb5 gapped down -$67 by market open
+
 =============================
 TP=2R, above range, size 4, scale half and move SL/TP up by R
 -----------------------------

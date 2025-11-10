@@ -173,6 +173,7 @@ foreach ($data as $i => $bar) {
         $realized = round($position['size'] * ($bar['close'] - $entryPrice), 2);
         $position['realized'] += $realized;
         if ($position['realized'] >= 0) {
+            // todo check if actually a win. bar could close below breakeven SL
             $wins[$rangeLabel][] = $position['realized'];
             echo "$indent<b class=\"win\">$barsSinceEntry mins Stop loss realized: $realized Total win: {$position['realized']}</b>\n";
         } else {
@@ -181,6 +182,23 @@ foreach ($data as $i => $bar) {
             echo "$indent<b class=\"loss\">$ftime $barsSinceEntry mins Stop loss: {$position['realized']}</b>\n";
         }
         $position = null;
+        $retestDone = true;
+    }
+    if ($bar['time'] >= strtotime($ymd . " 15:55:00")) {
+        // close any open position at market close
+        if ($position) {
+            $realized = round($position['size'] * ($bar['close'] - $entryPrice), 2);
+            $position['realized'] += $realized;
+            if ($position['realized'] >= 0) {
+                $wins[$rangeLabel][] = $position['realized'];
+                echo "$indent<b class=\"win\">$barsSinceEntry mins Market close realized: $realized Total win: {$position['realized']}</b>\n";
+            } else {
+                $lossAmount = round($position['realized'], 2);
+                $losses[$rangeLabel][] = $lossAmount;
+                echo "$indent<b class=\"loss\">$ftime $barsSinceEntry mins Market close loss: {$position['realized']}</b>\n";
+            }
+            $position = null;
+        }
         $retestDone = true;
     }
 }
