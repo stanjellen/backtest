@@ -39,8 +39,13 @@ $doi = null; // day open index
 $doBar = null; // day open bar
 $daybar = null; // day high/low tracker
 $or5 = null; // 5-min open range bar
+$position = null;
+//        "yyyy-mm-dd DDD "
+$indent = "               ";
 foreach ($data as $i => $bar) {
     $bar['i'] = $i;
+    $ymd= date("Y-m-d", $bar['time']);
+    $dow = date("D", $bar['time']);
     $ftime = date("H:i", $bar['time']);
     $rangeLabel = labelRange($bar['close'], $prevDaybar);
     // track the day bars
@@ -50,13 +55,18 @@ foreach ($data as $i => $bar) {
         $doi = $i;
         $doBar = $bar;
         $daybar = $bar;
-        $or5 = null;
-        $break5hBar = false;
-        $break5l = false;
-        $retest5h = false;
-        $bnr5l = false;
-        $retestDone = false;
-        echo date("Y-m-d D ", $bar['time']) . " $rangeLabel\n";
+        // if not still holding position from yesterday, reset all trackers
+        if ($position) {
+            echo "$ymd $dow Position held since yesterday\n";
+        } else {
+            $or5 = null;
+            $break5hBar = false;
+            $break5l = false;
+            $retest5h = false;
+            $bnr5l = false;
+            $retestDone = false;
+        } 
+        // echo date("Y-m-d D ", $bar['time']) . " $rangeLabel\n";
     } else {
         [$isHigh, $isLow] = trackbar($daybar, $bar);
         if ($isHigh) $hodBar = $bar;
@@ -118,7 +128,7 @@ foreach ($data as $i => $bar) {
             ];
 
 
-            echo "  $ftime <b>Entry - Size: {$position['size']} price: {$entryPrice} SL: $SL TP: $TP Gain: $targetGain, SL Amount: $SLAmount, R/R: $RR</b>\n";
+            echo "$ymd $dow $ftime <b>Entry - Size: {$position['size']} price: {$entryPrice} SL: $SL TP: $TP Gain: $targetGain, SL Amount: $SLAmount, R/R: $RR</b>\n";
         } else {
             // done for the day for now
             // todo better logic
@@ -133,7 +143,7 @@ foreach ($data as $i => $bar) {
     if ($daybar['high'] <= $bar['high']) {
         $diff = $bar['high'] - $retest5h['close'];
         // keep printing after done
-        echo "  HOD $bsr mins +$diff {$bar['high']}\n";
+        echo "$indent HOD $bsr mins +$diff {$bar['high']}\n";
     }
 
 
@@ -149,10 +159,11 @@ foreach ($data as $i => $bar) {
         $SL += $SLAmount; // move stop loss to breakeven
         $TP += $SLAmount; // move take profit up by 1R
         if ($position['size']) {
-            echo "  <b class=\"win\">$barsSinceEntry mins Scaled out. remaining size: {$position['size']} Realized: $winAmount</b>\n";
+            echo "$indent<b class=\"win\">$barsSinceEntry mins Scaled out. remaining size: {$position['size']} Realized: $winAmount</b>\n";
         } else {
-            echo "  <b class=\"win\">$barsSinceEntry mins Closed position.  Realized: $winAmount. Realized Total: {$position['realized']}</b>\n";
+            echo "$indent<b class=\"win\">$barsSinceEntry mins Closed position.  Realized: $winAmount. Realized Total: {$position['realized']}</b>\n";
             $wins[$rangeLabel][] = $position['realized'];
+            $position = null;
             $retestDone = true;
         }
     }
@@ -163,12 +174,13 @@ foreach ($data as $i => $bar) {
         $position['realized'] += $realized;
         if ($position['realized'] >= 0) {
             $wins[$rangeLabel][] = $position['realized'];
-            echo "  <b class=\"win\">$barsSinceEntry mins Stop loss realized: $realized Total win: {$position['realized']}</b>\n";
+            echo "$indent<b class=\"win\">$barsSinceEntry mins Stop loss realized: $realized Total win: {$position['realized']}</b>\n";
         } else {
             $lossAmount = round($position['realized'], 2);
             $losses[$rangeLabel][] = $lossAmount;
-            echo "  <b class=\"loss\">$ftime $barsSinceEntry mins Stop loss: {$position['realized']}</b>\n";
+            echo "$indent<b class=\"loss\">$ftime $barsSinceEntry mins Stop loss: {$position['realized']}</b>\n";
         }
+        $position = null;
         $retestDone = true;
     }
 }
@@ -192,12 +204,12 @@ print_r($lossCounts);
 echo "Loss totals:";
 print_r($lossTotals);
 
-echo "Retests:";
-print_r($retests);
-echo "Wins:";
-print_r($wins);
-echo "Losses:";
-print_r($losses);
+// echo "Retests:";
+// print_r($retests);
+// echo "Wins:";
+// print_r($wins);
+// echo "Losses:";
+// print_r($losses);
 echo "</pre>";
 //------------------------------------------------------------------------------
 function labelRange($value, $bar) {

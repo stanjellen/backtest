@@ -1,6 +1,8 @@
 TODO ------------
-check range detection
+pull data from db
+compare to QQQ
 look into tightening stop loss by selling before candle close if extreme
+identify and avoid biggest losses
 
 
 =============================
