@@ -1,6 +1,6 @@
 TODO ------------
 pull data from db
-compare to QQQ
+compare to QQQ to hopefully exclude 2025-03-12 -$8.52
 look into tightening stop loss by selling before candle close if extreme
 identify and avoid biggest losses
 

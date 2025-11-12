@@ -3,6 +3,17 @@
     .loss { color: darkred; }
     </style>
 <?php
+// from db has different results than the csv data. todo check why.
+// require_once 'db.php';
+// $query = <<<SQL
+//     SELECT *, UNIX_TIMESTAMP(CONVERT_TZ(minute, 'UTC', 'America/New_York')) as time from minute
+//     WHERE symbol = ?
+//     ORDER BY minute ASC
+//     SQL;
+// $stuff = psquery($query, 'TSLA');
+// $data = $stuff->fetch_all(MYSQLI_ASSOC);
+
+// old from csv file
 $file = "../data/TSLA.USUSD_Candlestick_1_M_BID_01.01.2025-14.06.2025_NOFLATS.csv";
 $headings = ['time', 'open', 'high', 'low', 'close', 'volume'];
 $data = get_csv($file, $headings, ignore_first_row: true);
@@ -227,12 +238,12 @@ print_r($lossCounts);
 echo "Loss totals:";
 print_r($lossTotals);
 
-// echo "Retests:";
-// print_r($retests);
-// echo "Wins:";
-// print_r($wins);
-// echo "Losses:";
-// print_r($losses);
+echo "Retests:";
+print_r($retests);
+echo "Wins:";
+print_r($wins);
+echo "Losses:";
+print_r($losses);
 echo "</pre>";
 //------------------------------------------------------------------------------
 function ATR($numBars = 14) {
@@ -260,18 +271,6 @@ function isInRange($value, $bar) {
 function is_green_bar($bar) {
     return $bar['close'] > $bar['open'];
 }
-function chart_convert_time(&$data) {
-    foreach ($data as &$row) {
-        $row['time'] = $row['time'] - 4 * 3600; // to new york time
-    }
-}
-function chart_export(&$data) {
-    chart_convert_time($data);
-    $out = "export default ";
-    $out .= json_encode($data, JSON_PRETTY_PRINT);
-    return $out;
-}
-
 function is_new_day(&$data, $i, $bar) {
     if ($i === 0) return true;
     $lastBar = $i > 0 ? $data[$i - 1] : null;
@@ -320,3 +319,7 @@ function get_csv($file, $header = NULL, $ignore_first_row = false) {
     fclose($handle);
     return $data;
 }
+// function get_symbol_data($symbol) {
+//     $table = 'minute';
+//     return 
+// }
