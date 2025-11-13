@@ -3,21 +3,22 @@
     .loss { color: darkred; }
     </style>
 <?php
-// from db has different results than the csv data. todo check why.
 // require_once 'db.php';
-// $query = <<<SQL
-//     SELECT *, UNIX_TIMESTAMP(CONVERT_TZ(minute, 'UTC', 'America/New_York')) as time from minute
-//     WHERE symbol = ?
-//     ORDER BY minute ASC
-//     SQL;
-// $stuff = psquery($query, 'TSLA');
-// $data = $stuff->fetch_all(MYSQLI_ASSOC);
+$query = <<<SQL
+    SELECT *, UNIX_TIMESTAMP(CONVERT_TZ(minute, 'UTC', 'America/New_York')) as time from minute
+    WHERE symbol = ?
+        -- Regular trading hours only
+        AND TIME(`minute`) >= '09:30' AND TIME(`minute`) < '16:00'
+    ORDER BY minute ASC
+    SQL;
+$stuff = psquery($query, 'TSLA');
+$data = $stuff->fetch_all(MYSQLI_ASSOC);
 
 // old from csv file
-$file = "../data/TSLA.USUSD_Candlestick_1_M_BID_01.01.2025-14.06.2025_NOFLATS.csv";
-$headings = ['time', 'open', 'high', 'low', 'close', 'volume'];
-$data = get_csv($file, $headings, ignore_first_row: true);
-format_data($data);
+// $file = "../data/TSLA.USUSD_Candlestick_1_M_BID_01.01.2025-14.06.2025_NOFLATS.csv";
+// $headings = ['time', 'open', 'high', 'low', 'close', 'volume'];
+// $data = get_csv($file, $headings, ignore_first_row: true);
+// format_data($data);
 
 // expects minute bars - no premarket
 // tracks day open, day high/low, 5-min open range
