@@ -1,5 +1,6 @@
 TODO ------------
-pull data from db
+correct the time from db. it's 2 hours off
+don't enter any trade after 11am
 compare to QQQ to hopefully exclude 2025-03-12 -$8.52
 look into tightening stop loss by selling before candle close if extreme
 identify and avoid biggest losses
